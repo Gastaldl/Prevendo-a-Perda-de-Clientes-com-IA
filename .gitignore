@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Ambiente virtual
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Banco de dados (opcional — remova se quiser versionar o .db)
+data/*.db
+
+# Power BI (arquivos temporários)
+powerbi/*.tmp
+
+# OS
+.DS_Store
+Thumbs.db
