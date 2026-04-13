@@ -64,6 +64,8 @@ class Product(Base):
     price = Column(Float, nullable=False)
     #   - description (Text)
     description = Column(Text)
+    #   - stock (Integer) — quantidade disponível em estoque
+    stock = Column(Integer, default=0)
 
 
 class Order(Base):

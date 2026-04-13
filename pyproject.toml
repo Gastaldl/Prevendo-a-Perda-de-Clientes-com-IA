@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ecommerce-churn"
+version = "0.1.0"
+description = "Previsão de Churn de Clientes de E-commerce"
+requires-python = ">=3.11"
+
+[tool.setuptools.packages.find]
+include = ["src*"]
+
+[tool.pyrefly]
+search_path = ["."]
