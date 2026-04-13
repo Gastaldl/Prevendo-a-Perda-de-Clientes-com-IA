@@ -25,6 +25,9 @@ env/
 # Banco de dados (opcional — remova se quiser versionar o .db)
 data/*.db
 
+# Datasets Kaggle (arquivos grandes, não versionar)
+data/raw/
+
 # Power BI (arquivos temporários)
 powerbi/*.tmp
 

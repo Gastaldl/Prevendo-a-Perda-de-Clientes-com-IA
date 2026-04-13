@@ -7,92 +7,92 @@
 -- =============================================================================
 
 -- Tabela de Clientes
-CREATE TABLE IF NOT EXISTS clientes (
+CREATE TABLE IF NOT EXISTS clients (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    nome TEXT NOT NULL,
+    name TEXT NOT NULL,
     email TEXT UNIQUE NOT NULL,
-    telefone TEXT,
-    data_cadastro DATETIME NOT NULL,
-    cidade TEXT,
-    estado TEXT,
-    genero TEXT,
-    data_nascimento DATE,
+    phone TEXT,
+    registration_date DATETIME NOT NULL,
+    city TEXT,
+    state TEXT,
+    gender TEXT,
+    birth_date DATE,
     is_churned BOOLEAN DEFAULT 0
 );
 
 -- Tabela de Produtos
-CREATE TABLE IF NOT EXISTS produtos (
+CREATE TABLE IF NOT EXISTS products (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    nome TEXT NOT NULL,
-    categoria TEXT NOT NULL,
-    preco REAL NOT NULL,
-    descricao TEXT
+    name TEXT NOT NULL,
+    category TEXT NOT NULL,
+    price REAL NOT NULL,
+    description TEXT
 );
 
 -- Tabela de Pedidos
-CREATE TABLE IF NOT EXISTS pedidos (
+CREATE TABLE IF NOT EXISTS orders (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    cliente_id INTEGER NOT NULL,
-    data_pedido DATETIME NOT NULL,
-    valor_total REAL NOT NULL,
-    status TEXT NOT NULL,         -- 'entregue', 'cancelado', 'devolvido'
-    metodo_pagamento TEXT,        -- 'cartão', 'boleto', 'pix'
-    FOREIGN KEY (cliente_id) REFERENCES clientes(id)
+    client_id INTEGER NOT NULL,
+    order_date DATETIME NOT NULL,
+    total_value REAL NOT NULL,
+    status TEXT NOT NULL,         -- 'delivered', 'cancelled', 'returned'
+    payment_method TEXT,          -- 'credit_card', 'boleto', 'pix'
+    FOREIGN KEY (client_id) REFERENCES clients(id)
 );
 
 -- Tabela de Itens do Pedido
-CREATE TABLE IF NOT EXISTS itens_pedido (
+CREATE TABLE IF NOT EXISTS order_items (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    pedido_id INTEGER NOT NULL,
-    produto_id INTEGER NOT NULL,
-    quantidade INTEGER NOT NULL,
-    preco_unitario REAL NOT NULL,
-    FOREIGN KEY (pedido_id) REFERENCES pedidos(id),
-    FOREIGN KEY (produto_id) REFERENCES produtos(id)
+    order_id INTEGER NOT NULL,
+    product_id INTEGER NOT NULL,
+    quantity INTEGER NOT NULL,
+    unit_price REAL NOT NULL,
+    FOREIGN KEY (order_id) REFERENCES orders(id),
+    FOREIGN KEY (product_id) REFERENCES products(id)
 );
 
 -- Tabela de Interações com Suporte
-CREATE TABLE IF NOT EXISTS interacoes_suporte (
+CREATE TABLE IF NOT EXISTS support_interactions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    cliente_id INTEGER NOT NULL,
-    data_interacao DATETIME NOT NULL,
-    tipo TEXT NOT NULL,           -- 'reclamação', 'dúvida', 'elogio', 'troca', 'cancelamento'
-    canal TEXT,                   -- 'chat', 'email', 'telefone'
-    resolvido BOOLEAN DEFAULT 0,
-    descricao TEXT,
-    FOREIGN KEY (cliente_id) REFERENCES clientes(id)
+    client_id INTEGER NOT NULL,
+    interaction_date DATETIME NOT NULL,
+    type TEXT NOT NULL,           -- 'complaint', 'question', 'praise', 'exchange', 'cancellation'
+    channel TEXT,                 -- 'chat', 'email', 'phone'
+    resolved BOOLEAN DEFAULT 0,
+    description TEXT,
+    FOREIGN KEY (client_id) REFERENCES clients(id)
 );
 
 -- Tabela de Previsões de Churn (Fase 3)
-CREATE TABLE IF NOT EXISTS previsoes_churn (
+CREATE TABLE IF NOT EXISTS churn_predictions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    cliente_id INTEGER NOT NULL,
-    probabilidade_churn REAL NOT NULL,
-    previsao BOOLEAN NOT NULL,
-    data_previsao DATETIME NOT NULL,
-    versao_modelo TEXT NOT NULL,
-    FOREIGN KEY (cliente_id) REFERENCES clientes(id)
+    client_id INTEGER NOT NULL,
+    churn_probability REAL NOT NULL,
+    prediction BOOLEAN NOT NULL,
+    prediction_date DATETIME NOT NULL,
+    model_version TEXT NOT NULL,
+    FOREIGN KEY (client_id) REFERENCES clients(id)
 );
 
 -- Tabela de Histórico de Treinamento (Fase 3)
-CREATE TABLE IF NOT EXISTS historico_treinamento (
+CREATE TABLE IF NOT EXISTS training_history (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    data_treinamento DATETIME NOT NULL,
-    versao_modelo TEXT NOT NULL,
-    acuracia REAL,
-    precisao REAL,
+    training_date DATETIME NOT NULL,
+    model_version TEXT NOT NULL,
+    accuracy REAL,
+    precision REAL,
     recall REAL,
     f1_score REAL,
     auc_roc REAL,
-    num_epocas INTEGER,
+    num_epochs INTEGER,
     learning_rate REAL,
-    arquitetura TEXT,
-    observacoes TEXT
+    architecture TEXT,
+    notes TEXT
 );
 
 -- Índices para otimização de queries
-CREATE INDEX IF NOT EXISTS idx_pedidos_cliente ON pedidos(cliente_id);
-CREATE INDEX IF NOT EXISTS idx_pedidos_data ON pedidos(data_pedido);
-CREATE INDEX IF NOT EXISTS idx_itens_pedido ON itens_pedido(pedido_id);
-CREATE INDEX IF NOT EXISTS idx_interacoes_cliente ON interacoes_suporte(cliente_id);
-CREATE INDEX IF NOT EXISTS idx_previsoes_cliente ON previsoes_churn(cliente_id);
+CREATE INDEX IF NOT EXISTS idx_orders_client ON orders(client_id);
+CREATE INDEX IF NOT EXISTS idx_orders_date ON orders(order_date);
+CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id);
+CREATE INDEX IF NOT EXISTS idx_interactions_client ON support_interactions(client_id);
+CREATE INDEX IF NOT EXISTS idx_predictions_client ON churn_predictions(client_id);

@@ -4,6 +4,23 @@ Este guia vai te acompanhar em cada fase do projeto. Cada seção tem **o que fa
 
 ---
 
+## 🔀 Estratégia de Dados: Faker primeiro, Kaggle depois
+
+Este projeto usa uma abordagem em **duas rodadas**:
+
+| Rodada | Fonte de Dados | Objetivo |
+|---|---|---|
+| **1ª Rodada** (Fases 1-4) | 🏭 **Faker** (dados sintéticos) | Construir e validar todo o pipeline. Você controla os dados, então se algo der errado, o problema está no código — não nos dados. Além disso, a geração com Faker é ótima prática de Python. |
+| **2ª Rodada** (Fase 5) | 📊 **Kaggle** (dados reais) | Trocar a fonte de dados por um dataset real, sem mudar o restante do pipeline. O modelo enfrenta um desafio real, e o portfólio fica muito mais forte. |
+
+**Por que essa ordem?**
+- Com Faker você pratica **mais Python** (lógica de geração, seed, distribuições)
+- Você tem **controle total** sobre os padrões de churn
+- Quando trocar para dados reais, o pipeline já está validado — só muda a entrada
+- No portfólio, você mostra que trabalhou **com dados reais**
+
+---
+
 ## 📋 Pré-requisitos
 
 Antes de começar, certifique-se de ter instalado:
@@ -39,7 +56,9 @@ git commit -m "chore: setup inicial do projeto"
 ## 🗂️ Mapa de Arquivos do Projeto
 
 ```
-├── data/ecommerce_churn.db          ← Banco SQLite (gerado na Fase 1)
+├── data/
+│   ├── ecommerce_churn.db           ← Banco SQLite (gerado na Fase 1)
+│   └── raw/                         ← Datasets Kaggle baixados (Fase 5)
 ├── sql/
 │   ├── 01_schema.sql                ← Referência do schema
 │   ├── 02_feature_engineering.sql   ← Queries de features (praticar aqui)
@@ -49,7 +68,8 @@ git commit -m "chore: setup inicial do projeto"
 │   │   ├── connection.py            ← Conexão SQLAlchemy (Fase 1)
 │   │   └── models.py               ← Modelos ORM (Fase 1)
 │   ├── data_generation/
-│   │   └── generate.py              ← Dados sintéticos com Faker (Fase 1)
+│   │   ├── generate.py              ← 🏭 Dados sintéticos com Faker (Fase 1)
+│   │   └── import_kaggle.py         ← 📊 Importação de dados reais (Fase 5)
 │   ├── features/
 │   │   └── extract.py               ← Extração de features (Fase 1→2)
 │   ├── model/
@@ -65,9 +85,9 @@ git commit -m "chore: setup inicial do projeto"
 
 ---
 
-# 🔷 FASE 1 — Banco de Dados (SQL)
+# 🔷 FASE 1 — Banco de Dados com Dados Sintéticos (SQL + Faker)
 
-**Objetivo:** Criar o banco de dados relacional, popular com dados sintéticos e praticar queries SQL.
+**Objetivo:** Criar o banco de dados relacional, popular com dados sintéticos via Faker e praticar queries SQL. Os dados sintéticos servem para **construir e validar o pipeline** antes de usar dados reais.
 
 **Tecnologias:** SQLite, SQLAlchemy, Faker, SQL puro
 
@@ -109,17 +129,17 @@ Transformar cada `TODO` em colunas SQLAlchemy reais. O arquivo já tem todos os 
 - **`relationship()`:** Define relações entre tabelas (1:N, N:M)
 - **`ForeignKey()`:** Referência entre tabelas
 
-**Exemplo de referência (para a tabela Cliente):**
+**Exemplo de referência (para a tabela Client):**
 ```python
-class Cliente(Base):
-    __tablename__ = "clientes"
+class Client(Base):
+    __tablename__ = "clients"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    nome = Column(String(100), nullable=False)
+    name = Column(String(100), nullable=False)
     email = Column(String(100), unique=True, nullable=False)
     # ... demais colunas
 
-    pedidos = relationship("Pedido", back_populates="cliente")
+    orders = relationship("Order", back_populates="client")
 ```
 
 **Dica:** Consulte o arquivo `sql/01_schema.sql` para ver o schema completo como referência.
@@ -132,7 +152,7 @@ import sqlite3
 conn = sqlite3.connect("data/ecommerce_churn.db")
 cursor = conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
 print([row[0] for row in cursor.fetchall()])
-# Deve mostrar: ['clientes', 'produtos', 'pedidos', 'itens_pedido', 'interacoes_suporte', ...]
+# Deve mostrar: ['clients', 'products', 'orders', 'order_items', 'support_interactions', ...]
 ```
 
 ---
@@ -212,7 +232,7 @@ import pandas as pd
 from src.database.connection import get_engine
 
 engine = get_engine()
-df = pd.read_sql("SELECT * FROM clientes LIMIT 5", engine)
+df = pd.read_sql("SELECT * FROM clients LIMIT 5", engine)
 print(df.head())
 ```
 
@@ -362,17 +382,17 @@ Session = get_session()
 session = Session()
 
 # Deletar previsões antigas desta versão
-session.query(PrevisaoChurn).filter_by(versao_modelo="v1.0").delete()
+session.query(ChurnPrediction).filter_by(model_version="v1.0").delete()
 
 # Inserir novas previsões
 previsoes = []
 for cid, prob in zip(cliente_ids, probabilidades):
-    previsoes.append(PrevisaoChurn(
-        cliente_id=cid,
-        probabilidade_churn=prob,
-        previsao=prob > 0.5,
-        data_previsao=datetime.now(),
-        versao_modelo="v1.0"
+    previsoes.append(ChurnPrediction(
+        client_id=cid,
+        churn_probability=prob,
+        prediction=prob > 0.5,
+        prediction_date=datetime.now(),
+        model_version="v1.0"
     ))
 
 session.add_all(previsoes)
@@ -380,7 +400,7 @@ session.commit()
 session.close()
 ```
 
-**Critério de conclusão:** ✅ Tabela `previsoes_churn` populada com 2000 registros (1 por cliente).
+**Critério de conclusão:** ✅ Tabela `churn_predictions` populada com 2000 registros (1 por cliente).
 
 ---
 
@@ -389,7 +409,7 @@ session.close()
 **O que fazer:**
 Implementar `salvar_historico_treinamento()` para registrar as métricas de cada treinamento.
 
-**Critério de conclusão:** ✅ Tabela `historico_treinamento` com pelo menos 1 registro contendo todas as métricas.
+**Critério de conclusão:** ✅ Tabela `training_history` com pelo menos 1 registro contendo todas as métricas.
 
 ---
 
@@ -422,8 +442,8 @@ from src.database.connection import get_engine
 engine = get_engine()
 
 # Exportar tabelas
-pd.read_sql("SELECT * FROM clientes", engine).to_csv("data/clientes.csv", index=False)
-pd.read_sql("SELECT * FROM previsoes_churn", engine).to_csv("data/previsoes.csv", index=False)
+pd.read_sql("SELECT * FROM clients", engine).to_csv("data/clients.csv", index=False)
+pd.read_sql("SELECT * FROM churn_predictions", engine).to_csv("data/predictions.csv", index=False)
 # ... etc
 ```
 2. No Power BI: Obter Dados → CSV
@@ -431,8 +451,8 @@ pd.read_sql("SELECT * FROM previsoes_churn", engine).to_csv("data/previsoes.csv"
 **Opção C — Converter para Excel:**
 ```python
 with pd.ExcelWriter("data/dados_ecommerce.xlsx") as writer:
-    pd.read_sql("SELECT * FROM clientes", engine).to_excel(writer, sheet_name="Clientes")
-    pd.read_sql("SELECT * FROM pedidos", engine).to_excel(writer, sheet_name="Pedidos")
+    pd.read_sql("SELECT * FROM clients", engine).to_excel(writer, sheet_name="Clients")
+    pd.read_sql("SELECT * FROM orders", engine).to_excel(writer, sheet_name="Orders")
     # ... etc
 ```
 
@@ -442,11 +462,11 @@ with pd.ExcelWriter("data/dados_ecommerce.xlsx") as writer:
 
 **Relacionamentos a configurar:**
 ```
-clientes (1) ──→ (N) pedidos         [via cliente_id]
-clientes (1) ──→ (N) interacoes      [via cliente_id]
-clientes (1) ──→ (N) previsoes_churn [via cliente_id]
-pedidos  (1) ──→ (N) itens_pedido    [via pedido_id]
-produtos (1) ──→ (N) itens_pedido    [via produto_id]
+clients  (1) ──→ (N) orders                [via client_id]
+clients  (1) ──→ (N) support_interactions   [via client_id]
+clients  (1) ──→ (N) churn_predictions     [via client_id]
+orders   (1) ──→ (N) order_items           [via order_id]
+products (1) ──→ (N) order_items           [via product_id]
 ```
 
 ---
@@ -457,42 +477,42 @@ produtos (1) ──→ (N) itens_pedido    [via produto_id]
 
 ```dax
 // Total de Clientes
-Total Clientes = COUNTROWS(clientes)
+Total Clientes = COUNTROWS(clients)
 
 // Taxa de Churn
 Taxa Churn = 
 DIVIDE(
-    COUNTROWS(FILTER(clientes, clientes[is_churned] = TRUE())),
-    COUNTROWS(clientes)
+    COUNTROWS(FILTER(clients, clients[is_churned] = TRUE())),
+    COUNTROWS(clients)
 )
 
 // Receita Total
-Receita Total = SUM(pedidos[valor_total])
+Receita Total = SUM(orders[total_value])
 
 // Ticket Médio
-Ticket Médio = AVERAGE(pedidos[valor_total])
+Ticket Médio = AVERAGE(orders[total_value])
 
 // Clientes em Risco (prob > 70%)
 Clientes Alto Risco = 
 COUNTROWS(
-    FILTER(previsoes_churn, previsoes_churn[probabilidade_churn] > 0.7)
+    FILTER(churn_predictions, churn_predictions[churn_probability] > 0.7)
 )
 
 // Receita em Risco
 Receita em Risco = 
 CALCULATE(
-    SUM(pedidos[valor_total]),
+    SUM(orders[total_value]),
     FILTER(
-        clientes,
-        RELATED(previsoes_churn[probabilidade_churn]) > 0.7
+        clients,
+        RELATED(churn_predictions[churn_probability]) > 0.7
     )
 )
 
 // Média de Interações
 Media Interacoes = 
 DIVIDE(
-    COUNTROWS(interacoes_suporte),
-    COUNTROWS(clientes)
+    COUNTROWS(support_interactions),
+    COUNTROWS(clients)
 )
 ```
 
@@ -544,6 +564,105 @@ Crie **4 páginas** no seu dashboard:
 
 ---
 
+# 🔷 FASE 5 — Migração para Dados Reais (Kaggle)
+
+**Objetivo:** Substituir os dados sintéticos por um dataset real do Kaggle, re-treinar o modelo e atualizar o dashboard. Isso valida que seu pipeline é robusto e deixa seu portfólio mais forte.
+
+**Tecnologias:** Pandas, SQLAlchemy, Kaggle
+
+**Tempo estimado:** 2-3 dias
+
+---
+
+### Etapa 5.1 — Escolher e Baixar o Dataset
+
+**Datasets recomendados:**
+
+| Dataset | Link | Observações |
+|---|---|---|
+| **E-Commerce Customer Churn** | [Kaggle](https://www.kaggle.com/datasets/ankitverma2010/ecommerce-customer-churn-analysis-and-prediction) | Encaixa perfeitamente no tema do projeto |
+| **Telco Customer Churn** | [Kaggle](https://www.kaggle.com/datasets/blastchar/telco-customer-churn) | Clássico, muito usado em portfólios |
+
+**O que fazer:**
+1. Baixe o CSV do Kaggle
+2. Salve em `data/raw/` (esta pasta está no `.gitignore`)
+3. Explore o dataset em um notebook (`notebooks/exploracao_kaggle.ipynb`)
+
+**Critério de conclusão:** ✅ Dataset baixado e explorado. Você entende as colunas, os tipos de dados e a distribuição de churn.
+
+---
+
+### Etapa 5.2 — Mapear e Importar (`src/data_generation/import_kaggle.py`)
+
+**O que fazer:**
+Implementar o script que lê o CSV do Kaggle e insere os dados nas suas tabelas SQL existentes.
+
+**Conceitos-chave:**
+- **Mapeamento de colunas:** O dataset do Kaggle terá colunas com nomes e formatos diferentes das suas tabelas. Você precisa fazer o "de-para"
+- **Limpeza:** Dados reais vêm sujos — valores faltantes, formatos inconsistentes, outliers
+- **Adaptação do schema:** Pode ser que o Kaggle tenha colunas extras ou faltem algumas. Adapte os modelos ORM se necessário
+
+**Pipeline de importação:**
+```
+CSV Kaggle (data/raw/)
+    ↓
+1. Ler com pd.read_csv()
+    ↓
+2. Explorar: df.info(), df.describe(), df.isnull().sum()
+    ↓
+3. Mapear colunas do Kaggle → suas tabelas
+    ↓
+4. Limpar: tratar nulos, converter tipos, remover duplicatas
+    ↓
+5. Resetar banco: drop_all() + create_all()
+    ↓
+6. Inserir via SQLAlchemy (session.add_all)
+    ↓
+7. Verificar: SELECT COUNT(*) de cada tabela
+```
+
+**Dica importante:** Nem todo dataset do Kaggle terá o mesmo nível de detalhe das suas tabelas Faker. Por exemplo, o dataset pode não ter tabela de `produtos` separada. Nesse caso, simplifique seus modelos ou preencha o que faltar com dados derivados.
+
+**Critério de conclusão:** ✅ Banco populado com dados reais. Queries da Fase 1 funcionam sem alteração (ou com ajustes mínimos).
+
+---
+
+### Etapa 5.3 — Re-treinar o Modelo
+
+**O que fazer:**
+1. Rodar o pipeline de extração de features (`src/features/extract.py`) — a query SQL deve funcionar sem mudanças
+2. Rodar o pré-processamento — atenção a features que possam não existir mais
+3. Re-treinar a rede neural — salve como `v2.0`
+4. Comparar métricas: Faker (v1.0) vs Kaggle (v2.0)
+
+**⚠️ Expectativa realista:**
+O modelo treinado com dados reais provavelmente terá **métricas inferiores** às do Faker. Isso é normal! Dados sintéticos têm padrões perfeitos e fáceis de aprender. Dados reais são ruidosos e desafiadores — e é exatamente por isso que são mais valiosos para aprendizado.
+
+**O que comparar:**
+| Métrica | Faker (v1.0) | Kaggle (v2.0) |
+|---|---|---|
+| Acurácia | ~ | ~ |
+| Precision | ~ | ~ |
+| Recall | ~ | ~ |
+| F1-Score | ~ | ~ |
+| AUC-ROC | ~ | ~ |
+
+**Critério de conclusão:** ✅ Modelo v2.0 treinado com dados reais. Métricas registradas no `historico_treinamento`.
+
+---
+
+### Etapa 5.4 — Atualizar o Dashboard
+
+**O que fazer:**
+1. Refresh dos dados no Power BI
+2. Verificar se os visuais ainda fazem sentido com os dados reais
+3. Na página de Performance do Modelo, agora você terá **duas versões** para comparar (v1.0 Faker vs v2.0 Kaggle)
+4. Ajustar filtros e medidas DAX se necessário
+
+**Critério de conclusão:** ✅ Dashboard atualizado com dados reais e comparação entre versões do modelo.
+
+---
+
 # 🎯 Checklist Final
 
 Use este checklist para garantir que você praticou tudo:
@@ -559,6 +678,7 @@ Use este checklist para garantir que você praticou tudo:
 
 ### Python
 - [ ] Gerou dados sintéticos com Faker
+- [ ] Importou e limpou dados reais do Kaggle
 - [ ] Conectou ao banco via SQLAlchemy
 - [ ] Manipulou DataFrames com Pandas
 - [ ] Fez pré-processamento (nulos, normalização, encoding)
@@ -572,6 +692,7 @@ Use este checklist para garantir que você praticou tudo:
 - [ ] Aplicou Dropout para regularização
 - [ ] Avaliou com múltiplas métricas (Acc, Precision, Recall, F1, AUC)
 - [ ] Experimentou diferentes hiperparâmetros
+- [ ] Comparou performance entre dados sintéticos e reais
 
 ### Power BI
 - [ ] Conectou ao banco de dados / importou dados
@@ -580,6 +701,7 @@ Use este checklist para garantir que você praticou tudo:
 - [ ] Construiu 4 páginas de dashboard
 - [ ] Aplicou filtros interativos
 - [ ] Formatou com design profissional
+- [ ] Atualizou dashboard com dados reais do Kaggle
 
 ---
 

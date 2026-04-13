@@ -1,12 +1,12 @@
 """
 Exportação de previsões e métricas para o banco de dados.
 
-Salva os resultados do modelo nas tabelas previsoes_churn
-e historico_treinamento.
+Salva os resultados do modelo nas tabelas churn_predictions
+e training_history.
 """
 from datetime import datetime
 from src.database.connection import get_session
-from src.database.models import PrevisaoChurn, HistoricoTreinamento
+from src.database.models import ChurnPrediction, TrainingHistory
 
 
 def salvar_previsoes(
@@ -20,12 +20,12 @@ def salvar_previsoes(
 
     TODO: Implementar a inserção de previsões:
         1. Criar uma session do SQLAlchemy
-        2. Para cada cliente, criar um objeto PrevisaoChurn com:
-            - cliente_id
-            - probabilidade_churn
-            - previsao (True se prob > threshold)
-            - data_previsao (datetime atual)
-            - versao_modelo
+        2. Para cada cliente, criar um objeto ChurnPrediction com:
+            - client_id
+            - churn_probability
+            - prediction (True se prob > threshold)
+            - prediction_date (datetime atual)
+            - model_version
         3. Fazer bulk insert (session.add_all)
         4. Commit e close
 
@@ -42,13 +42,13 @@ def salvar_historico_treinamento(metricas: dict, versao_modelo: str = "v1.0"):
     Salva o histórico de treinamento no banco de dados.
 
     TODO: Implementar a inserção do histórico:
-        1. Criar um objeto HistoricoTreinamento com as métricas
+        1. Criar um objeto TrainingHistory com as métricas
         2. Inserir no banco
         3. Commit e close
 
     Args:
         metricas: Dicionário com as métricas do treinamento
-                  (acuracia, precisao, recall, f1_score, etc.)
+                  (accuracy, precision, recall, f1_score, etc.)
         versao_modelo: Identificador da versão do modelo
     """
     pass

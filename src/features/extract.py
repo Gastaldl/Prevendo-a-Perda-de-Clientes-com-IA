@@ -15,36 +15,36 @@ def extrair_features() -> pd.DataFrame:
     TODO: Implementar as queries SQL para extrair as seguintes features:
 
     Features de Compras:
-        - total_pedidos: COUNT de pedidos por cliente
-        - total_gasto: SUM do valor_total dos pedidos
-        - ticket_medio: AVG do valor_total
-        - total_gasto_90dias: SUM valor_total WHERE data_pedido >= (hoje - 90 dias)
-        - dias_desde_ultimo_pedido: julianday('now') - julianday(MAX(data_pedido))
-        - taxa_cancelamento: proporção de pedidos cancelados/devolvidos
+        - total_orders: COUNT de pedidos por cliente
+        - total_spent: SUM do total_value dos pedidos
+        - avg_ticket: AVG do total_value
+        - spent_last_90_days: SUM total_value WHERE order_date >= (hoje - 90 dias)
+        - days_since_last_order: julianday('now') - julianday(MAX(order_date))
+        - cancellation_rate: proporção de pedidos cancelled/returned
 
     Features de Suporte:
-        - total_interacoes: COUNT de interações por cliente
-        - total_reclamacoes: COUNT WHERE tipo = 'reclamação'
-        - taxa_resolucao: proporção de interações resolvidas
-        - dias_desde_ultima_interacao: similar ao de pedidos
+        - total_interactions: COUNT de interações por cliente
+        - total_complaints: COUNT WHERE type = 'complaint'
+        - resolution_rate: proporção de interações resolvidas (resolved)
+        - days_since_last_interaction: similar ao de pedidos
 
     Features de Perfil:
-        - dias_como_cliente: julianday('now') - julianday(data_cadastro)
-        - num_categorias_distintas: COUNT DISTINCT de categorias compradas
+        - days_as_client: julianday('now') - julianday(registration_date)
+        - distinct_categories_count: COUNT DISTINCT de categorias compradas
 
     Features Avançadas (Window Functions):
-        - tendencia_gasto: comparar gasto dos últimos 30 dias vs 30-60 dias
-        - ranking_gasto: RANK() do cliente por total gasto
+        - spending_trend: comparar gasto dos últimos 30 dias vs 30-60 dias
+        - spending_rank: RANK() do cliente por total gasto
 
     Label:
         - is_churned: coluna alvo (0 ou 1)
 
     Dicas de SQL:
-        - Use JOINs entre clientes, pedidos, itens_pedido e produtos
+        - Use JOINs entre clients, orders, order_items e products
         - Use CASE WHEN para cálculos condicionais
         - Use COALESCE para tratar NULLs
         - Use window functions: ROW_NUMBER(), RANK(), LAG()
-        - Agrupe por cliente_id usando GROUP BY
+        - Agrupe por client_id usando GROUP BY
 
     Returns:
         DataFrame com uma linha por cliente e todas as features.
@@ -54,10 +54,10 @@ def extrair_features() -> pd.DataFrame:
     # TODO: Escrever a query SQL principal
     # query = """
     #     SELECT
-    #         c.id AS cliente_id,
+    #         c.id AS client_id,
     #         ...
-    #     FROM clientes c
-    #     LEFT JOIN pedidos p ON c.id = p.cliente_id
+    #     FROM clients c
+    #     LEFT JOIN orders o ON c.id = o.client_id
     #     ...
     #     GROUP BY c.id
     # """

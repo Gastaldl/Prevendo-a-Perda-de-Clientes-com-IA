@@ -23,18 +23,24 @@ def get_engine():
     """Cria e retorna a engine do SQLAlchemy."""
     # TODO: Criar a engine usando create_engine()
     # Dica: use echo=True durante desenvolvimento para ver as queries SQL
-    pass
+    engine = create_engine("sqlite:///data/ecommerce_churn.db", echo=True)
+    return engine
 
 
 def get_session():
     """Cria e retorna uma session factory."""
     # TODO: Criar a session factory usando sessionmaker()
     # Dica: bind=get_engine()
-    pass
+    session = sessionmaker(bind=get_engine())
+    return session
 
 
 def init_db():
     """Inicializa o banco de dados criando todas as tabelas."""
     # TODO: Usar Base.metadata.create_all() para criar as tabelas
     # Dica: importe os modelos antes de chamar create_all()
-    pass
+    from src.database.models import (
+    Client, Product, Order, OrderItem,
+    SupportInteraction, ChurnPrediction, TrainingHistory
+    )
+    Base.metadata.create_all(bind=get_engine())
